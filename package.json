@@ -1,7 +1,11 @@
 {
   "name": "@zazuko/vue-graph-layout",
   "version": "0.1.0",
-  "private": true,
+  "author": "Zazuko (https://zazuko.com)",
+  "main": "src/index.js",
+  "files": [
+    "/src"
+  ],
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
@@ -28,5 +32,10 @@
     "eslint-plugin-vue": "^8.0.3",
     "postcss": "^8.4.12",
     "tailwindcss": "^3.0.23"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zazuko/vue-graph-layout.git"
   }
 }
