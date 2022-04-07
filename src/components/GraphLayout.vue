@@ -358,7 +358,7 @@ function setupZoomArrowKeys (container, zoom) {
 }
 </script>
 
-<style scoped>
+<style>
 .graph-layout {
   position: relative;
   overflow: hidden;
@@ -384,6 +384,7 @@ function setupZoomArrowKeys (container, zoom) {
 
 .link {
   fill: transparent;
+  stroke: black;
   stroke-width: 1;
   marker-end: url(#arrow);
   marker-start: url(#dot);
@@ -395,7 +396,7 @@ function setupZoomArrowKeys (container, zoom) {
  * state, and one marker for the active state. */
 .link.active {
   z-index: 10;
-  stroke: var(--color-primary-300);
+  stroke: #FFB15E;
   stroke-width: 2;
   marker-end: url(#arrow-active);
   marker-start: url(#dot-active);
