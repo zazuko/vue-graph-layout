@@ -83,6 +83,18 @@ export default {
     activeLinks: { required: true, type: Array },
     // Adjust zoom level when nodes change
     autoZoom: { default: true },
+    layoutCfg: {
+      // Full description at
+      // https://g6.antv.vision/en/docs/api/graphLayout/dagre
+      default: {
+        rankdir: 'RL',
+        align: undefined,
+        nodesep: 20,
+        ranksep: 50,
+        marginx: 10,
+        marginy: 10,
+      }
+    }
   },
   emits: ['link-enter', 'link-out'],
 
@@ -92,6 +104,9 @@ export default {
 
   watch: {
     nodes () {
+      this.renderGraph()
+    },
+    layoutCfg () {
       this.renderGraph()
     }
   },
@@ -110,7 +125,7 @@ export default {
       const nodes = this.nodes.map(node => ({ ...node }))
       const links = this.links.map(link => ({ ...link }))
 
-      const layout = computeLayout(root, nodes, links)
+      const layout = computeLayout(root, nodes, links, this.layoutCfg)
       const simulation = d3.forceSimulation().nodes(nodes)
 
       simulation
@@ -292,17 +307,10 @@ function nearestPointOnPerimeter (point, rectTopLeft, rectWidth, rectHeight) {
 }
 
 // Compute graph layout using Dagre
-function computeLayout (root, nodes, links) {
+function computeLayout (root, nodes, links, layoutCfg) {
   const g = new dagre.graphlib.Graph()
 
-  g.setGraph({
-    rankdir: 'RL',
-    // align: 'DL',
-    nodesep: 20,
-    ranksep: 50,
-    marginx: 10,
-    marginy: 10,
-  })
+  g.setGraph(layoutCfg)
 
   // Default to assigning a new object as a label for each new edge.
   g.setDefaultEdgeLabel(() => ({}))

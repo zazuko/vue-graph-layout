@@ -18,6 +18,10 @@
           <textarea v-model="linksData" @blur="parseLinks" class="w-full text-sm" rows="10"></textarea>
         </label>
 
+        <label>
+          <textarea v-model="layoutCfgData" @blur="parseLayoutConfig" class="w-full text-sm" rows="10"></textarea>
+        </label>
+
         <div>
           Events:
           <ul class="bg-white h-48 overflow-y-scroll text-sm font-mono">
@@ -32,6 +36,7 @@
         :links="links"
         :active-links="activeLinks"
         :auto-zoom="autoZoom"
+        :layout-cfg="layoutCfg"
         @link-enter="onLinkEnter"
         @link-out="onLinkOut"
       >
@@ -92,6 +97,20 @@ export default {
     }
     onMounted(parseLinks)
 
+    const layoutCfgData = ref(JSON.stringify({
+      rankdir: 'RL',
+      align: undefined,
+      nodesep: 20,
+      ranksep: 50,
+      marginx: 10,
+      marginy: 10,
+    }, null, 2))
+    const layoutCfg = ref([])
+    const parseLayoutConfig = () => {
+      layoutCfg.value = JSON.parse(layoutCfgData.value)
+    }
+    onMounted(parseLayoutConfig)
+
     const events = ref([])
     const activeLinks = ref([])
     const onLinkEnter = (link) => {
@@ -112,6 +131,9 @@ export default {
       linksData,
       links,
       parseLinks,
+      layoutCfgData,
+      layoutCfg,
+      parseLayoutConfig,
       activeLinks,
       onLinkEnter,
       onLinkOut,
