@@ -2,18 +2,18 @@
   <div class="graph-layout">
     <div ref="layout" class="layout">
       <div v-for="node in nodes" :key="node.id" class="node" :data-id="node.id">
-        <slot name="node" :node="node">
-          Missing slot
-        </slot>
+        <slot name="node" :node="node"> Missing slot </slot>
       </div>
       <svg class="links">
         <defs>
           <marker
             id="arrow"
             viewBox="0 0 10 10"
-            refX="10" refY="5"
+            refX="10"
+            refY="5"
             markerUnits="userSpaceOnUse"
-            markerWidth="10" markerHeight="10"
+            markerWidth="10"
+            markerHeight="10"
             orient="auto"
             class="fill-gray-600 dark:fill-gray-100"
           >
@@ -22,9 +22,11 @@
           <marker
             id="arrow-active"
             viewBox="0 0 10 10"
-            refX="10" refY="5"
+            refX="10"
+            refY="5"
             markerUnits="userSpaceOnUse"
-            markerWidth="10" markerHeight="10"
+            markerWidth="10"
+            markerHeight="10"
             orient="auto"
             class="fill-primary-300"
           >
@@ -33,9 +35,11 @@
           <marker
             id="dot"
             viewBox="0 0 100 100"
-            refX="50" refY="50"
+            refX="50"
+            refY="50"
             markerUnits="userSpaceOnUse"
-            markerWidth="6" markerHeight="6"
+            markerWidth="6"
+            markerHeight="6"
             orient="auto"
             class="fill-gray-600 dark:fill-gray-100"
           >
@@ -44,9 +48,11 @@
           <marker
             id="dot-active"
             viewBox="0 0 100 100"
-            refX="50" refY="50"
+            refX="50"
+            refY="50"
             markerUnits="userSpaceOnUse"
-            markerWidth="6" markerHeight="6"
+            markerWidth="6"
+            markerHeight="6"
             orient="auto"
             class="fill-primary-300"
           >
@@ -77,7 +83,7 @@ export default {
   props: {
     // List of objects with an `id` property
     nodes: { required: true, type: Array },
-    // List of obejcts with `label`, `source` and `target` properties
+    // List of objects with `label`, `source` and `target` properties
     links: { required: true, type: Array },
     // List of currently highlighted links
     activeLinks: { required: true, type: Array },
@@ -92,7 +98,7 @@ export default {
         nodesep: 20,
         ranksep: 50,
         marginx: 10,
-        marginy: 10,
+        marginy: 10
       }
     }
   },
@@ -122,16 +128,34 @@ export default {
       const root = d3.select(this.$refs.layout)
 
       // Copy to avoid mutating the props
-      const nodes = this.nodes.map(node => ({ ...node }))
-      const links = this.links.map(link => ({ ...link }))
+      const nodes = this.nodes.map((node) => ({ ...node }))
+      const links = this.links.map((link) => ({ ...link }))
 
       const layout = computeLayout(root, nodes, links, this.layoutCfg)
       const simulation = d3.forceSimulation().nodes(nodes)
 
       simulation
-        .force('links', d3.forceLink(links).id(({ id }) => id).strength(0))
-        .force('posX', d3.forceX().strength(1).x(node => layout.nodes[node.id].x))
-        .force('posY', d3.forceY().strength(1).y(node => layout.nodes[node.id].y))
+        .force(
+          'links',
+          d3
+            .forceLink(links)
+            .id(({ id }) => id)
+            .strength(0)
+        )
+        .force(
+          'posX',
+          d3
+            .forceX()
+            .strength(1)
+            .x((node) => layout.nodes[node.id].x)
+        )
+        .force(
+          'posY',
+          d3
+            .forceY()
+            .strength(1)
+            .y((node) => layout.nodes[node.id].y)
+        )
         .stop()
 
       root.style('width', `${layout.width}px`)
@@ -141,21 +165,39 @@ export default {
       const initScaleX = container.clientWidth / layout.width
       const initScaleY = container.clientHeight / layout.height
       const initScale = Math.min(initScaleX, initScaleY, 1)
-      const initX = Math.max((container.clientWidth - (layout.width * initScale)) / 2, 0)
-      const initY = Math.max((container.clientHeight - (layout.height * initScale)) / 2, 0)
-      const zoom = d3.zoom().scaleExtent([0.1, 1.2]).on('zoom', ({ transform }) => {
-        root.style('transform', `translate(${transform.x}px, ${transform.y}px) scale(${transform.k})`)
-        root.style('transform-origin', '0 0')
-      })
+      const initX = Math.max(
+        (container.clientWidth - layout.width * initScale) / 2,
+        0
+      )
+      const initY = Math.max(
+        (container.clientHeight - layout.height * initScale) / 2,
+        0
+      )
+      const zoom = d3
+        .zoom()
+        .scaleExtent([0.1, 1.2])
+        .on('zoom', ({ transform }) => {
+          root.style(
+            'transform',
+            `translate(${transform.x}px, ${transform.y}px) scale(${transform.k})`
+          )
+          root.style('transform-origin', '0 0')
+        })
       containerSelection.call(zoom)
       setupZoomArrowKeys(containerSelection, zoom)
       if (this.autoZoom) {
-        containerSelection.call(zoom.transform, d3.zoomIdentity.translate(initX, initY).scale(initScale))
+        containerSelection.call(
+          zoom.transform,
+          d3.zoomIdentity.translate(initX, initY).scale(initScale)
+        )
       }
 
       // Draw lines for links
       const linkFromGraphLink = (graphLink) =>
-        this.links.find(({ source, target }) => source === graphLink.source.id && target === graphLink.target.id)
+        this.links.find(
+          ({ source, target }) =>
+            source === graphLink.source.id && target === graphLink.target.id
+        )
       const linksSelection = root
         .select('.links')
         .selectAll('.link')
@@ -169,26 +211,34 @@ export default {
           this.$emit('link-out', link)
         })
 
-      const render = () => renderSimulation(nodesSelection, linksSelection, containerSelection)
+      const render = () =>
+        renderSimulation(nodesSelection, linksSelection, containerSelection)
 
       // Enable nodes drag & drop
-      const nodesSelection = root.selectAll('.node')
+      const nodesSelection = root
+        .selectAll('.node')
         .data(nodes)
         .call(drag(simulation, render))
 
       // Run simulation for a defined number of steps
       // See https://github.com/d3/d3-force/blob/master/README.md#simulation_tick
-      for (let i = 0, n = Math.ceil(Math.log(simulation.alphaMin()) / Math.log(1 - simulation.alphaDecay())); i < n; ++i) {
+      for (
+        let i = 0,
+          n = Math.ceil(
+            Math.log(simulation.alphaMin()) /
+              Math.log(1 - simulation.alphaDecay())
+          );
+        i < n;
+        ++i
+      ) {
         simulation.tick()
       }
       render()
 
       // Remove all forces after simulation is finished to allow dragging nodes around without affecting the other nodes
-      simulation
-        .force('posX', null)
-        .force('posY', null)
-    },
-  },
+      simulation.force('posX', null).force('posY', null)
+    }
+  }
 }
 
 function renderSimulation (nodes, links, container) {
@@ -196,9 +246,7 @@ function renderSimulation (nodes, links, container) {
   const currentScale = d3.zoomTransform(containerElt).k
 
   // Update node positions
-  nodes
-    .join()
-    .attr('style', (d) => `left: ${d.x}px; top: ${d.y}px`)
+  nodes.join().attr('style', (d) => `left: ${d.x}px; top: ${d.y}px`)
 
   // Update link positions
   const computeLinkPath = d3
@@ -232,7 +280,8 @@ function drag (simulation, renderSimulation) {
     renderSimulation()
   }
 
-  return d3.drag()
+  return d3
+    .drag()
     .on('start', dragstarted)
     .on('drag', dragged)
     .on('end', dragended)
@@ -244,26 +293,23 @@ function drag (simulation, renderSimulation) {
 function sourcePoint (d, container, scale) {
   const radius = 3
   const sourceNodeElt = container.querySelector(`[data-id="${d.source.id}"]`)
-  const sourcePropertyElt = sourceNodeElt.querySelector(`[data-id="${d.sourceProperty}"]`)
+  const sourcePropertyElt = sourceNodeElt.querySelector(
+    `[data-id="${d.sourceProperty}"]`
+  )
 
   const sourceElt = sourcePropertyElt ?? sourceNodeElt
-  const offsetX = d.target.x > d.source.x
-    ? (sourceElt.clientWidth + radius)
-    : -radius
+  const offsetX =
+    d.target.x > d.source.x ? sourceElt.clientWidth + radius : -radius
 
   const offsetY = sourcePropertyElt
-    ? (
-        (
-          (sourcePropertyElt.getBoundingClientRect().y / scale) -
-          (sourceNodeElt.getBoundingClientRect().y / scale)
-        ) +
-        (sourcePropertyElt.clientHeight / 2)
-      )
+    ? sourcePropertyElt.getBoundingClientRect().y / scale -
+      sourceNodeElt.getBoundingClientRect().y / scale +
+      sourcePropertyElt.clientHeight / 2
     : sourceNodeElt.clientHeight / 2
 
   return {
     x: d.source.x + offsetX,
-    y: d.source.y + offsetY,
+    y: d.source.y + offsetY
   }
 }
 
@@ -273,7 +319,12 @@ function sourcePoint (d, container, scale) {
 function targetClosestAnchor (d, container, scale) {
   const targetElt = container.querySelector(`[data-id="${d.target.id}"]`)
   const source = sourcePoint(d, container, scale)
-  return nearestPointOnPerimeter(source, d.target, targetElt.clientWidth, targetElt.clientHeight)
+  return nearestPointOnPerimeter(
+    source,
+    d.target,
+    targetElt.clientWidth,
+    targetElt.clientHeight
+  )
 }
 
 function clamp (x, lower, upper) {
@@ -283,7 +334,7 @@ function clamp (x, lower, upper) {
 function nearestPointOnPerimeter (point, rectTopLeft, rectWidth, rectHeight) {
   const rectBottomRight = {
     x: rectTopLeft.x + rectWidth,
-    y: rectTopLeft.y + rectHeight,
+    y: rectTopLeft.y + rectHeight
   }
 
   const x = clamp(point.x, rectTopLeft.x, rectBottomRight.x)
@@ -315,7 +366,7 @@ function computeLayout (root, nodes, links, layoutCfg) {
   // Default to assigning a new object as a label for each new edge.
   g.setDefaultEdgeLabel(() => ({}))
 
-  nodes.forEach(node => {
+  nodes.forEach((node) => {
     const elt = root.select(`[data-id="${node.id}"]`)
     const width = elt.style('width').replace('px', '')
     const height = elt.style('height').replace('px', '')
@@ -339,11 +390,11 @@ function computeLayout (root, nodes, links, layoutCfg) {
         ...acc,
         [id]: {
           id,
-          x: node.x - (node.width / 2),
-          y: node.y - (node.height / 2),
+          x: node.x - node.width / 2,
+          y: node.y - node.height / 2
         }
       }
-    }, {}),
+    }, {})
   }
 }
 
@@ -356,7 +407,7 @@ function setupZoomArrowKeys (container, zoom) {
       ArrowUp: [0, step],
       ArrowRight: [-step, 0],
       ArrowDown: [0, -step],
-      ArrowLeft: [step, 0],
+      ArrowLeft: [step, 0]
     }[event.key]
 
     if (translation) {
@@ -404,7 +455,7 @@ function setupZoomArrowKeys (container, zoom) {
  * state, and one marker for the active state. */
 .link.active {
   z-index: 10;
-  stroke: #FFB15E;
+  stroke: #ffb15e;
   stroke-width: 2;
   marker-end: url(#arrow-active);
   marker-start: url(#dot-active);
