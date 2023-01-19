@@ -513,6 +513,7 @@ function interpolateCubicBezierAngle(start, control1, control2, end) {
 .arrow-head.active {
   z-index: 10;
   stroke: #ffb15e;
-  stroke-width: 2;
+  stroke-width: 1;
+  fill: #ffb15e;
 }
 </style>
