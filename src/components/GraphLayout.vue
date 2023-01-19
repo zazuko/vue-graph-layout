@@ -7,32 +7,6 @@
       <svg class="links">
         <defs>
           <marker
-            id="arrow"
-            viewBox="0 0 10 10"
-            refX="10"
-            refY="5"
-            markerUnits="userSpaceOnUse"
-            markerWidth="10"
-            markerHeight="10"
-            orient="auto"
-            class="fill-gray-600 dark:fill-gray-100"
-          >
-            <path d="M 0 0 L 10 5 L 0 10 z" class="link-arrow" />
-          </marker>
-          <marker
-            id="arrow-active"
-            viewBox="0 0 10 10"
-            refX="10"
-            refY="5"
-            markerUnits="userSpaceOnUse"
-            markerWidth="10"
-            markerHeight="10"
-            orient="auto"
-            class="fill-primary-300"
-          >
-            <path d="M 0 0 L 10 5 L 0 10 z" class="link-arrow" />
-          </marker>
-          <marker
             id="dot"
             viewBox="0 0 100 100"
             refX="50"
@@ -59,14 +33,18 @@
             <circle cx="50" cy="50" r="50" class="link-start" />
           </marker>
         </defs>
-        <path
-          v-for="(link, index) in links"
-          :key="index"
-          class="link stroke-gray-700 dark:stroke-gray-100"
-          :class="{ active: activeLinks.includes(link) }"
-        >
-          <title>{{ link.label }}</title>
-        </path>
+        <g class="link-container" v-for="(link, index) in links" :key="index">
+          <path
+            class="link stroke-gray-700 dark:stroke-gray-100"
+            :class="{ active: activeLinks.includes(link) }"
+          >
+            <title>{{ link.label }}</title>
+          </path>
+          <path
+            class="arrow-head fill-gray-600 dark:fill-gray-100"
+            :class="{ active: activeLinks.includes(link) }"
+          ></path>
+        </g>
       </svg>
     </div>
     <slot></slot>
@@ -74,6 +52,7 @@
 </template>
 
 <script>
+/* eslint-disable */
 import { nextTick } from 'vue'
 import * as d3 from 'd3'
 import dagre from 'dagre'
@@ -104,21 +83,21 @@ export default {
   },
   emits: ['link-enter', 'link-out'],
 
-  mounted () {
+  mounted() {
     this.renderGraph()
   },
 
   watch: {
-    nodes () {
+    nodes() {
       this.renderGraph()
     },
-    layoutCfg () {
+    layoutCfg() {
       this.renderGraph()
     }
   },
 
   methods: {
-    async renderGraph () {
+    async renderGraph() {
       if (this.nodes.length === 0) return
 
       await nextTick()
@@ -211,8 +190,26 @@ export default {
           this.$emit('link-out', link)
         })
 
+      const arrowHeadSelection = root
+        .select('.links')
+        .selectAll('.arrow-head')
+        .data(links)
+        .on('mouseover', (event, graphLink) => {
+          const link = linkFromGraphLink(graphLink)
+          this.$emit('link-enter', link)
+        })
+        .on('mouseout', (event, graphLink) => {
+          const link = linkFromGraphLink(graphLink)
+          this.$emit('link-out', link)
+        })
+
       const render = () =>
-        renderSimulation(nodesSelection, linksSelection, containerSelection)
+        renderSimulation(
+          nodesSelection,
+          linksSelection,
+          containerSelection,
+          arrowHeadSelection
+        )
 
       // Enable nodes drag & drop
       const nodesSelection = root
@@ -241,7 +238,7 @@ export default {
   }
 }
 
-function renderSimulation (nodes, links, container) {
+function renderSimulation(nodes, links, container, arrowHeads) {
   const containerElt = container.node()
   const currentScale = d3.zoomTransform(containerElt).k
 
@@ -256,24 +253,58 @@ function renderSimulation (nodes, links, container) {
     .x(({ x }) => x)
     .y(({ y }) => y)
 
+  const arrowHeadPathFunction = (d) => {
+    const targetPoint = targetClosestAnchor(d, containerElt, currentScale)
+    //   return `M ${targetPoint.x} ${targetPoint.y} L ${targetPoint.x - 10} ${
+    //    targetPoint.y + 5
+    //   } L ${targetPoint.x - 10} ${targetPoint.y - 5} z`
+    return 'M -10 -5 L 0 0 L -10 5 z'
+  }
+
+  const arrowHeadTransformOrigin = (d) => {
+    const cubicBezierPath = computeLinkPath(d)
+    // e.g. M123.21089999999982,131.9999999999999 C 99.6054499999999,131.9999999999999, 99.6054499999999,77.99999999999999,   75.99999999999997,77.99999999999999
+    const points = cubicBezierPath
+      .split('C')[1]
+      .split(',')
+      .map((s) => new Number(s.trim()).valueOf())
+
+    const start = cubicBezierPath
+      .split('C')[0]
+      .replace('M', '')
+      .split(',')
+      .map((s) => new Number(s.trim()).valueOf())
+
+    const control1 = [points[0], points[1]]
+    const control2 = [points[2], points[3]]
+    const end = [points[4], points[5]]
+
+    const angle = interpolateCubicBezierAngle(start, control1, control2, end)
+    const targetPoint = targetClosestAnchor(d, containerElt, currentScale)
+    // return `rotate(${angle(4)} ${targetPoint.x}, ${targetPoint.y})`
+    return `translate(${end[0]}, ${end[1]}) rotate(${angle(0.95)})`
+  }
+  // d="M 0 0 L 10 5 L 0 10 z"
   links.attr('d', computeLinkPath)
+  arrowHeads.attr('d', arrowHeadPathFunction)
+  arrowHeads.attr('transform', arrowHeadTransformOrigin)
 }
 
 // Setup drag & drop
-function drag (simulation, renderSimulation) {
-  function dragstarted (event, d) {
+function drag(simulation, renderSimulation) {
+  function dragstarted(event, d) {
     if (!event.active) simulation.alphaTarget(0.3).restart()
     d.fx = d.x
     d.fy = d.y
   }
 
-  function dragged (event, d) {
+  function dragged(event, d) {
     d.fx = event.x
     d.fy = event.y
     renderSimulation()
   }
 
-  function dragended (event, d) {
+  function dragended(event, d) {
     if (!event.active) simulation.alphaTarget(0)
     d.fx = null
     d.fy = null
@@ -290,7 +321,7 @@ function drag (simulation, renderSimulation) {
 /**
  * Property link source point
  */
-function sourcePoint (d, container, scale) {
+function sourcePoint(d, container, scale) {
   const radius = 3
   const sourceNodeElt = container.querySelector(`[data-id="${d.source.id}"]`)
   const sourcePropertyElt = sourceNodeElt.querySelector(
@@ -316,7 +347,7 @@ function sourcePoint (d, container, scale) {
 /**
  * Find closest point to link to target node
  */
-function targetClosestAnchor (d, container, scale) {
+function targetClosestAnchor(d, container, scale) {
   const targetElt = container.querySelector(`[data-id="${d.target.id}"]`)
   const source = sourcePoint(d, container, scale)
   return nearestPointOnPerimeter(
@@ -327,11 +358,11 @@ function targetClosestAnchor (d, container, scale) {
   )
 }
 
-function clamp (x, lower, upper) {
+function clamp(x, lower, upper) {
   return Math.max(lower, Math.min(upper, x))
 }
 
-function nearestPointOnPerimeter (point, rectTopLeft, rectWidth, rectHeight) {
+function nearestPointOnPerimeter(point, rectTopLeft, rectWidth, rectHeight) {
   const rectBottomRight = {
     x: rectTopLeft.x + rectWidth,
     y: rectTopLeft.y + rectHeight
@@ -358,7 +389,7 @@ function nearestPointOnPerimeter (point, rectTopLeft, rectWidth, rectHeight) {
 }
 
 // Compute graph layout using Dagre
-function computeLayout (root, nodes, links, layoutCfg) {
+function computeLayout(root, nodes, links, layoutCfg) {
   const g = new dagre.graphlib.Graph()
 
   g.setGraph(layoutCfg)
@@ -398,7 +429,7 @@ function computeLayout (root, nodes, links, layoutCfg) {
   }
 }
 
-function setupZoomArrowKeys (container, zoom) {
+function setupZoomArrowKeys(container, zoom) {
   d3.select('body').on('keydown', (event) => {
     if (event.target.localName !== 'body') return
 
@@ -414,6 +445,21 @@ function setupZoomArrowKeys (container, zoom) {
       container.call(zoom.translateBy, ...translation)
     }
   })
+}
+function interpolateCubicBezierAngle(start, control1, control2, end) {
+  // 0 <= t <= 1
+  // M 123.21089999999982,131.9999999999999 C 99.6054499999999,131.9999999999999, 99.6054499999999,77.99999999999999,   75.99999999999997,77.99999999999999
+  return function interpolator(t) {
+    const tangentX =
+      3 * Math.pow(1 - t, 2) * (control1[0] - start[0]) +
+      6 * (1 - t) * t * (control2[0] - control1[0]) +
+      3 * Math.pow(t, 2) * (end[0] - control2[0])
+    const tangentY =
+      3 * Math.pow(1 - t, 2) * (control1[1] - start[1]) +
+      6 * (1 - t) * t * (control2[1] - control1[1]) +
+      3 * Math.pow(t, 2) * (end[1] - control2[1])
+    return Math.atan2(tangentY, tangentX) * (180 / Math.PI)
+  }
 }
 </script>
 
@@ -445,7 +491,6 @@ function setupZoomArrowKeys (container, zoom) {
   fill: transparent;
   stroke: black;
   stroke-width: 1;
-  marker-end: url(#arrow);
   marker-start: url(#dot);
   pointer-events: all;
 }
@@ -457,7 +502,17 @@ function setupZoomArrowKeys (container, zoom) {
   z-index: 10;
   stroke: #ffb15e;
   stroke-width: 2;
-  marker-end: url(#arrow-active);
   marker-start: url(#dot-active);
+}
+
+.arrow-head {
+  stroke-width: 1;
+  pointer-events: all;
+}
+
+.arrow-head.active {
+  z-index: 10;
+  stroke: #ffb15e;
+  stroke-width: 2;
 }
 </style>
