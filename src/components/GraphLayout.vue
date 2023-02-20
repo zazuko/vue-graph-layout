@@ -6,44 +6,21 @@
       </div>
       <svg class="links">
         <defs>
-          <marker
-            id="dot"
-            viewBox="0 0 100 100"
-            refX="50"
-            refY="50"
-            markerUnits="userSpaceOnUse"
-            markerWidth="6"
-            markerHeight="6"
-            orient="auto"
-            class="fill-gray-600 dark:fill-gray-100"
-          >
+          <marker id="dot" viewBox="0 0 100 100" refX="50" refY="50" markerUnits="userSpaceOnUse" markerWidth="6"
+            markerHeight="6" orient="auto" class="fill-gray-600 dark:fill-gray-100">
             <circle cx="50" cy="50" r="50" class="link-start" />
           </marker>
-          <marker
-            id="dot-active"
-            viewBox="0 0 100 100"
-            refX="50"
-            refY="50"
-            markerUnits="userSpaceOnUse"
-            markerWidth="6"
-            markerHeight="6"
-            orient="auto"
-            class="fill-primary-300"
-          >
+          <marker id="dot-active" viewBox="0 0 100 100" refX="50" refY="50" markerUnits="userSpaceOnUse" markerWidth="6"
+            markerHeight="6" orient="auto" class="fill-primary-300">
             <circle cx="50" cy="50" r="50" class="link-start" />
           </marker>
         </defs>
         <g class="link-container" v-for="(link, index) in links" :key="index">
-          <path
-            class="link stroke-gray-700 dark:stroke-gray-100"
-            :class="{ active: activeLinks.includes(link) }"
-          >
+          <path class="link stroke-gray-700 dark:stroke-gray-100" :class="{ active: activeLinks.includes(link) }">
             <title>{{ link.label }}</title>
           </path>
-          <path
-            class="arrow-head fill-gray-600 dark:fill-gray-100"
-            :class="{ active: activeLinks.includes(link) }"
-          ></path>
+          <path class="arrow-head fill-gray-600 dark:fill-gray-100" :class="{ active: activeLinks.includes(link) }">
+          </path>
         </g>
       </svg>
     </div>
@@ -105,6 +82,7 @@ export default {
       const container = this.$el
       const containerSelection = d3.select(container)
       const root = d3.select(this.$refs.layout)
+
 
       // Copy to avoid mutating the props
       const nodes = this.nodes.map((node) => ({ ...node }))
@@ -210,21 +188,23 @@ export default {
           containerSelection,
           arrowHeadSelection
         )
+      // bbb find zoom scale 
+      const containerElt = containerSelection.node()
 
       // Enable nodes drag & drop
       const nodesSelection = root
         .selectAll('.node')
         .data(nodes)
-        .call(drag(simulation, render))
+        .call(drag(simulation, render, containerElt))
 
       // Run simulation for a defined number of steps
       // See https://github.com/d3/d3-force/blob/master/README.md#simulation_tick
       for (
         let i = 0,
-          n = Math.ceil(
-            Math.log(simulation.alphaMin()) /
-              Math.log(1 - simulation.alphaDecay())
-          );
+        n = Math.ceil(
+          Math.log(simulation.alphaMin()) /
+          Math.log(1 - simulation.alphaDecay())
+        );
         i < n;
         ++i
       ) {
@@ -255,15 +235,11 @@ function renderSimulation(nodes, links, container, arrowHeads) {
 
   const arrowHeadPathFunction = (d) => {
     const targetPoint = targetClosestAnchor(d, containerElt, currentScale)
-    //   return `M ${targetPoint.x} ${targetPoint.y} L ${targetPoint.x - 10} ${
-    //    targetPoint.y + 5
-    //   } L ${targetPoint.x - 10} ${targetPoint.y - 5} z`
     return 'M -10 -5 L 0 0 L -10 5 z'
   }
 
   const arrowHeadTransformOrigin = (d) => {
     const cubicBezierPath = computeLinkPath(d)
-    // e.g. M123.21089999999982,131.9999999999999 C 99.6054499999999,131.9999999999999, 99.6054499999999,77.99999999999999,   75.99999999999997,77.99999999999999
     const points = cubicBezierPath
       .split('C')[1]
       .split(',')
@@ -280,27 +256,33 @@ function renderSimulation(nodes, links, container, arrowHeads) {
     const end = [points[4], points[5]]
 
     const angle = interpolateCubicBezierAngle(start, control1, control2, end)
-    const targetPoint = targetClosestAnchor(d, containerElt, currentScale)
-    // return `rotate(${angle(4)} ${targetPoint.x}, ${targetPoint.y})`
-    return `translate(${end[0]}, ${end[1]}) rotate(${angle(0.95)})`
+    return `translate(${end[0]}, ${end[1]}) rotate(${angle(0.92)})`
   }
-  // d="M 0 0 L 10 5 L 0 10 z"
   links.attr('d', computeLinkPath)
   arrowHeads.attr('d', arrowHeadPathFunction)
   arrowHeads.attr('transform', arrowHeadTransformOrigin)
 }
 
 // Setup drag & drop
-function drag(simulation, renderSimulation) {
+function drag(simulation, renderSimulation, containerElt) {
+  let start_x = 0;
+  let start_y = 0;
+
   function dragstarted(event, d) {
-    if (!event.active) simulation.alphaTarget(0.3).restart()
+    if (!event.active) {
+      simulation.alphaTarget(0.3).restart()
+    }
+    start_x = event.x
+    start_y = event.y
+
     d.fx = d.x
     d.fy = d.y
   }
 
   function dragged(event, d) {
-    d.fx = event.x
-    d.fy = event.y
+    const currentScale = d3.zoomTransform(containerElt).k
+    d.fx = (start_x + (event.x - start_x) / currentScale)
+    d.fy = (start_y + (event.y - start_y) / currentScale);
     renderSimulation()
   }
 
@@ -334,8 +316,8 @@ function sourcePoint(d, container, scale) {
 
   const offsetY = sourcePropertyElt
     ? sourcePropertyElt.getBoundingClientRect().y / scale -
-      sourceNodeElt.getBoundingClientRect().y / scale +
-      sourcePropertyElt.clientHeight / 2
+    sourceNodeElt.getBoundingClientRect().y / scale +
+    sourcePropertyElt.clientHeight / 2
     : sourceNodeElt.clientHeight / 2
 
   return {
