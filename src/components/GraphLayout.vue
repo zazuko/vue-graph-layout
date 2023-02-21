@@ -223,8 +223,16 @@ function renderSimulation(nodes, links, container, arrowHeads) {
   const currentScale = d3.zoomTransform(containerElt).k
 
   // Update node positions
-  nodes.join().attr('style', (d) => `left: ${d.x}px; top: ${d.y}px`)
-
+  nodes.join().attr('style', (d) => {
+    if (isNaN(d.x) || isNaN(d.y)) {
+      // this is mitigating the problem
+      // https://github.com/zazuko/SPEX/issues/66
+      d.x = 300
+      d.y = 300
+    }
+    return `left: ${d.x}px; top: ${d.y}px`
+  }
+  )
   // Update link positions
   const computeLinkPath = d3
     .linkHorizontal()
@@ -256,7 +264,7 @@ function renderSimulation(nodes, links, container, arrowHeads) {
     const end = [points[4], points[5]]
 
     const angle = interpolateCubicBezierAngle(start, control1, control2, end)
-    return `translate(${end[0]}, ${end[1]}) rotate(${angle(0.92)})`
+    return `translate(${end[0]}, ${end[1]}) rotate(${angle(0.95)})`
   }
   links.attr('d', computeLinkPath)
   arrowHeads.attr('d', arrowHeadPathFunction)
