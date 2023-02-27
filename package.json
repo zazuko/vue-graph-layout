@@ -1,6 +1,6 @@
 {
   "name": "@zazuko/vue-graph-layout",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "author": "Zazuko (https://zazuko.com)",
   "main": "src/index.js",
   "files": [
