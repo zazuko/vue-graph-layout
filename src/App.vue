@@ -2,6 +2,7 @@
   <div class="h-full flex flex-col">
     <h1 class="p-4 text-lg font-semibold bg-gray-600 text-gray-50">Graph Layout demo</h1>
     <div class="flex-grow flex flex-row">
+
       <div class="w-1/3 p-4 bg-gray-100 flex flex-col gap-4">
         <label>
           Auto-zoom:
@@ -19,7 +20,8 @@
         </label>
 
         <label>
-          <textarea v-model="layoutCfgData" @blur="parseLayoutConfig" class="w-full text-sm" rows="10"></textarea>
+          Layout config:
+          <label>{{layoutCfg}}</label>
         </label>
 
         <div>
@@ -52,6 +54,27 @@
         </template>
       </graph-layout>
     </div>
+
+    <div id="menu">
+      <div class="control">
+      <label>Rank Direction:</label>
+      <select v-model="layoutCfg.rankdir">
+        <option value="TB">Top to Bottom</option>
+        <option value="BT">Bottom to Top</option>
+        <option value="LR">Left to Right</option>
+        <option value="RL">Right to Left</option>
+      </select>
+      </div>
+      <div class="control">
+      <label>Node Separation:</label>
+      <input type="range" v-model="layoutCfg.nodesep" min="10" max="100">
+      </div>
+      <div class="control">
+      <label>Rank Separation:</label>
+      <input type="range" v-model="layoutCfg.ranksep" min="10" max="100">
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -97,26 +120,23 @@ export default {
     }
     onMounted(parseLinks)
 
-    const layoutCfgData = ref(JSON.stringify({
+    const layoutCfg = ref({
       rankdir: 'RL',
       align: undefined,
       nodesep: 20,
       ranksep: 50,
       marginx: 10,
       marginy: 10,
-    }, null, 2))
-    const layoutCfg = ref([])
-    const parseLayoutConfig = () => {
-      layoutCfg.value = JSON.parse(layoutCfgData.value)
-    }
-    onMounted(parseLayoutConfig)
+    })
 
     const events = ref([])
     const activeLinks = ref([])
+
     const onLinkEnter = (link) => {
       activeLinks.value = [link]
       events.value.push({ name: 'link-enter', data: link })
     }
+
     const onLinkOut = () => {
       activeLinks.value = []
       events.value.push({ name: 'link-out', data: null })
@@ -131,9 +151,7 @@ export default {
       linksData,
       links,
       parseLinks,
-      layoutCfgData,
       layoutCfg,
-      parseLayoutConfig,
       activeLinks,
       onLinkEnter,
       onLinkOut,
@@ -170,5 +188,24 @@ export default {
     height: 100%;
     width: 100%;
   }
+
+  #menu {
+    position: fixed;
+    top: 100px;
+    right: 50px;
+    background-color: white;
+    border: 1px solid black;
+    padding: 10px;
+    pointer-events: auto;
+  }
+
+  .control {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+
 }
 </style>

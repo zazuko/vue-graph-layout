@@ -46,15 +46,25 @@ export default {
     // Adjust zoom level when nodes change
     autoZoom: { default: true },
     layoutCfg: {
-      // Full description at
-      // https://g6.antv.vision/en/docs/api/graphLayout/dagre
-      default: {
-        rankdir: 'RL',
-        align: undefined,
-        nodesep: 20,
-        ranksep: 50,
-        marginx: 10,
-        marginy: 10
+      type: Object,
+      /**
+       rankdir: The direction in which the graph is laid out. Can be "TB" (top to bottom), "BT" (bottom to top), "LR" (left to right), or "RL" (right to left).
+       align: Determines how the nodes are aligned within their rank. Can be "UL" (up and left), "UR" (up and right), "DL" (down and left), "DR" (down and right), or undefined.
+       nodesep: The minimum distance between nodes on the same rank.
+       ranksep: The minimum distance between ranks.
+       marginx: The margin to be added to the left and right of the graph.
+       marginy: The margin to be added to the top and bottom of the graph.
+
+       */
+      default: function() {
+        return {
+          rankdir: 'RL',
+          align: undefined,
+          nodesep: 20,
+          ranksep: 50,
+          marginx: 10,
+          marginy: 10
+        }
       }
     }
   },
@@ -68,12 +78,16 @@ export default {
     nodes() {
       this.renderGraph()
     },
-    layoutCfg() {
-      this.renderGraph()
+    layoutCfg: {
+      handler: 'onLayoutCfgChange',
+      deep: true
     }
   },
 
   methods: {
+    onLayoutCfgChange() {
+      this.renderGraph()
+    },
     async renderGraph() {
       if (this.nodes.length === 0) return
 
@@ -188,7 +202,7 @@ export default {
           containerSelection,
           arrowHeadSelection
         )
-      // bbb find zoom scale 
+      // bbb find zoom scale
       const containerElt = containerSelection.node()
 
       // Enable nodes drag & drop
